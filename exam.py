@@ -100,9 +100,9 @@ doctest.testmod()
 # +
 data['dehorned'] = data['Horn'] == 'Dehorned'
 
-arg = [tuple(x) for _, x in 
-       data[data['RhinosAtSighting'] == 'MPGRBF-02-05'][['Date', 'dehorned']].sort_values(by='Date').iterrows()]
-
+arg: list[tuple[datetime.datetime, bool]] = []
+for _, (a, b) in data[data['RhinosAtSighting'] == 'MPGRBF-02-05'][['Date', 'dehorned']].sort_values(by='Date').iterrows():
+    arg.append((a, b))
 
 dehorn_trend(arg)
 # -
