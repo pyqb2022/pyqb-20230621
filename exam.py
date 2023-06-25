@@ -100,9 +100,9 @@ doctest.testmod()
 # +
 data['dehorned'] = data['Horn'] == 'Dehorned'
 
-arg = [tuple(x) for _, x in 
-       data[data['RhinosAtSighting'] == 'MPGRBF-02-05'][['Date', 'dehorned']].sort_values(by='Date').iterrows()]
-
+arg: list[tuple[datetime.datetime, bool]] = []
+for _, (a, b) in data[data['RhinosAtSighting'] == 'MPGRBF-02-05'][['Date', 'dehorned']].sort_values(by='Date').iterrows():
+    arg.append((a, b))
 
 dehorn_trend(arg)
 # -
@@ -118,7 +118,7 @@ data.groupby('RhinosAtSighting')['dehorned'].mean()
 # Plot a histogram of the number of rhinos observed in each reserve
 
 # +
-nums = data.groupby('Reserve')['RhinosAtSighting'].count()
+nums = data.groupby('Reserve')['RhinosAtSighting'].nunique()
 
 fig, ax = plt.subplots(1)
 ax.bar(nums.index, nums, label='Number of rhinos')
@@ -131,8 +131,8 @@ _ = ax.legend()
 # Plot together the histograms of the number of male and female rhinos observed in each reserve
 
 # +
-nums_f = data[data['Sex'] == 'Female'].groupby('Reserve')['RhinosAtSighting'].count()
-nums_m = data[data['Sex'] == 'Male'].groupby('Reserve')['RhinosAtSighting'].count()
+nums_f = data[data['Sex'] == 'Female'].groupby('Reserve')['RhinosAtSighting'].nunique()
+nums_m = data[data['Sex'] == 'Male'].groupby('Reserve')['RhinosAtSighting'].nunique()
 
 
 fig, ax = plt.subplots(1)
