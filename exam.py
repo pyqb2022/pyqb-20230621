@@ -49,14 +49,15 @@ import arviz as az   # type: ignore
 # Read the data in a pandas DataFrame. Be sure  that the columns `Date` and `DateBorn` has dtype `pd.datetime64[ns]`.
 #
 
-pass
+data = pd.read_csv('rhinos.csv', sep=';', parse_dates=['Date', 'DateBorn'], dayfirst=True)
+data.dtypes
 
 # ### Exercise 2 (max 4 points)
 #
 # Add a column `Age` with the age in years of the rhinos at the time of the sighting.
 #
 
-pass
+data['Age'] = (data['Date'] - data['DateBorn']).astype(int) / (365*24*60*60*10**9)
 
 # ### Exercise 3 (max 7 points)
 #
@@ -64,31 +65,83 @@ pass
 #
 # To get the full marks, you should declare correctly the type hints and add a test within a doctest string.
 
-pass
+# +
+import datetime
+
+def dehorn_trend(lst: list[tuple[datetime.datetime, bool]]) -> list[tuple[datetime.datetime, bool]]:
+    """Return the list of the pairs in which the horned/dehorned state changed. 
+    
+    >>> dehorn_trend([(pd.to_datetime('1.1.1989'), True), 
+    ...               (pd.to_datetime('1.1.1990'), False), 
+    ...               (pd.to_datetime('1.1.1995'), False)])
+    [(Timestamp('1989-01-01 00:00:00'), True), (Timestamp('1995-01-01 00:00:00'), False)]
+    """
+    ris = lst[0:1]
+    state = lst[0][1]
+    for i in range(1, len(lst)):
+        if lst[i][1] == state:
+            ris[-1] = lst[i]
+        else:
+            ris.append(lst[i])
+            state = lst[i][1]
+    
+    return ris
+
+
+# -
+
+import doctest
+doctest.testmod()
 
 # ### Exercise 4 (max 4 points)
 #
 # Apply the function defined in Exercise 3 to the data referring to rhino MPGRBF-02-05.
 
-pass
+# +
+data['dehorned'] = data['Horn'] == 'Dehorned'
+
+arg = [tuple(x) for _, x in 
+       data[data['RhinosAtSighting'] == 'MPGRBF-02-05'][['Date', 'dehorned']].sort_values(by='Date').iterrows()]
+
+
+dehorn_trend(arg)
+# -
 
 # ### Exercise 5 (max 2 points)
 #
 # Compute the ratio dehorned/(all individual sightings) for each rhino
 
-pass
+data.groupby('RhinosAtSighting')['dehorned'].mean()
 
 # ### Exercise 6 (max 3 points)
 #
 # Plot a histogram of the number of rhinos observed in each reserve
 
-pass
+# +
+nums = data.groupby('Reserve')['RhinosAtSighting'].count()
+
+fig, ax = plt.subplots(1)
+ax.bar(nums.index, nums, label='Number of rhinos')
+ax.set_xticks(ax.get_xticks(), ax.get_xticklabels(), rotation=45, ha='right')
+_ = ax.legend()
+# -
 
 # ### Exercise 7 (max 3 points)
 #
 # Plot together the histograms of the number of male and female rhinos observed in each reserve
 
-pass
+# +
+nums_f = data[data['Sex'] == 'Female'].groupby('Reserve')['RhinosAtSighting'].count()
+nums_m = data[data['Sex'] == 'Male'].groupby('Reserve')['RhinosAtSighting'].count()
+
+
+fig, ax = plt.subplots(1)
+ax.bar(range(len(nums_f)), nums_f, width=-.4, align='edge', label='Number of female rhinos')
+ax.bar(range(len(nums_m)), nums_m, width=.4, align='edge', label='Number of male rhinos')
+
+ax.set_xticks(range(len(nums)), nums.index, rotation=45, ha='right')
+_ = ax.legend()
+# -
 
 # ### Exercise 8 (max 6 points)
 #
@@ -104,4 +157,14 @@ pass
 #
 #
 
-pass
+with pm.Model() as m:
+    a = pm.Uniform('alpha', 1, 50)
+    s = pm.Exponential('lambda', 1)
+    age = pm.Normal('age', a, s, observed=data['Age'])
+    
+    idata = pm.sample()
+    
+
+_ = az.plot_posterior(idata)
+
+
